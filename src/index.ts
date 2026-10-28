@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import { readJSON, writeJSON } from "./db";
+import * as os from "os"; 
 
 const app = express();
 app.use(express.json());
@@ -77,6 +78,26 @@ app.delete("/articulos/:id", (req, res) => {
   writeJSON(FILE, filtrados);
   res.status(204).send();
 });
+
+app.get("/health", (req, res) => {
+  //Simular que si falla => devuelva Error 503
+  //http://localhost:9000/health?simular=falla
+  if(req.query.simular === "falla"){
+    return res.status(503).json({
+      estado: "No Health",
+      nodo: os.hostname(),
+      timestamp: new Date().toISOString(),
+      mensaje: "Simulator Fail"
+    })
+  }
+
+  //Normalmente, aqui estaria la verificacion DB, Redis API externas etc
+  res.status(200).json({
+    estado: "Health",
+    nodo: os.hostname(),
+    timestamp: new Date().toISOString()
+  })
+})
 
 // ---------- Arranque ----------
 const PORT = Number(process.env.PORT) || 9000;
