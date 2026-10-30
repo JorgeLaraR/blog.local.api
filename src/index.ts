@@ -14,13 +14,16 @@ interface Articulo {
 
 const FILE = "articulos.json";
 
-// ---------- Rutas heredadas de la Unidad 1 ----------
-app.get("/saludo", (req: Request, res: Response) => {
+// Creamos un enrutador para agrupar todas las rutas bajo /api
+const apiRouter = express.Router();
+
+// ---------- Rutas de la API ----------
+apiRouter.get("/saludo", (req: Request, res: Response) => {
   const nombre = (req.query.nombre as string) || "mundo";
   res.json({ mensaje: `Hola, ${nombre}!` });
 });
 
-app.get("/info", (_req, res) => {
+apiRouter.get("/info", (_req, res) => {
   res.json({
     servicio: "blog.local",
     version: "1.0.0",
@@ -30,23 +33,23 @@ app.get("/info", (_req, res) => {
   });
 });
 
-app.get("/cotizacion", (_req, res) => {
+apiRouter.get("/cotizacion", (_req, res) => {
   res.json({ moneda: "USD", compra: 8.75, venta: 8.85, fecha: new Date().toISOString() });
 });
 
 // ---------- CRUD de articulos (DB en JSON) ----------
-app.get("/articulos", (_req, res) => {
+apiRouter.get("/articulos", (_req, res) => {
   res.json(readJSON<Articulo[]>(FILE));
 });
 
-app.get("/articulos/:id", (req, res) => {
+apiRouter.get("/articulos/:id", (req, res) => {
   const items = readJSON<Articulo[]>(FILE);
   const item = items.find((a) => a.id === Number(req.params.id));
   if (!item) return res.status(404).json({ error: "Articulo no encontrado" });
   res.json(item);
 });
 
-app.post("/articulos", (req, res) => {
+apiRouter.post("/articulos", (req, res) => {
   const items = readJSON<Articulo[]>(FILE);
   const nuevo: Articulo = {
     id: items.length ? Math.max(...items.map((a) => a.id)) + 1 : 1,
@@ -60,7 +63,7 @@ app.post("/articulos", (req, res) => {
   res.status(201).json(nuevo);
 });
 
-app.put("/articulos/:id", (req, res) => {
+apiRouter.put("/articulos/:id", (req, res) => {
   const items = readJSON<Articulo[]>(FILE);
   const idx = items.findIndex((a) => a.id === Number(req.params.id));
   if (idx === -1) return res.status(404).json({ error: "Articulo no encontrado" });
@@ -69,7 +72,7 @@ app.put("/articulos/:id", (req, res) => {
   res.json(items[idx]);
 });
 
-app.delete("/articulos/:id", (req, res) => {
+apiRouter.delete("/articulos/:id", (req, res) => {
   const items = readJSON<Articulo[]>(FILE);
   const filtrados = items.filter((a) => a.id !== Number(req.params.id));
   if (filtrados.length === items.length)
@@ -77,6 +80,9 @@ app.delete("/articulos/:id", (req, res) => {
   writeJSON(FILE, filtrados);
   res.status(204).send();
 });
+
+// Montamos el router bajo el prefijo /api
+app.use("/api", apiRouter);
 
 // ---------- Arranque ----------
 const PORT = Number(process.env.PORT) || 9000;
